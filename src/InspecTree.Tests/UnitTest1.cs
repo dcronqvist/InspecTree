@@ -32,8 +32,8 @@ public class SayHelloGeneratorTest
     }
     """;
 
-    var generator1 = new InspecTreeGenerator();
-    var generator2 = new InspecTreeInvocationGenerator();
+    var generator1 = new InspecTreeOverloadInterceptorGenerator();
+    var generator2 = new LambdaToInspecTreeOverloadGenerator();
 
     var compilation = CSharpCompilation.Create("CSharpCodeGen.GenerateAssembly")
         .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source))
