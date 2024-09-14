@@ -44,7 +44,7 @@ public partial class Program
 
     public override void VisitBinaryExpression(BinaryExpressionSyntax node)
     {
-      Console.WriteLine($"Found binary expression: {node}");
+      Console.WriteLine($"Found binary expression: (({node.Left}) {node.OperatorToken} ({node.Right}))");
       base.VisitBinaryExpression(node);
     }
   }
