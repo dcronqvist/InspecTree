@@ -5,8 +5,14 @@ namespace InspecTree.Generator
 {
   public sealed class GeneratedParameter
   {
-    public string ParemeterType { get; }
+    public string ParameterType { get; }
     public string ParameterName { get; }
+
+    public GeneratedParameter(string parameterType, string parameterName)
+    {
+      ParameterType = parameterType;
+      ParameterName = parameterName;
+    }
   }
 
   public sealed class GeneratedOverload
@@ -15,17 +21,35 @@ namespace InspecTree.Generator
     public string ClassName { get; }
     public string ClassAccessModifier { get; }
 
-    public string OverloadAccessModifier { get; }
+    public string MethodAccessModifier { get; }
     public bool IsStatic { get; }
     public string ReturnType { get; }
     public string MethodName { get; }
 
     public List<GeneratedParameter> Parameters { get; }
+
+    public GeneratedOverload(string namespaceName, string className, string classAccessModifier, string methodAccessModifier, bool isStatic, string returnType, string methodName, List<GeneratedParameter> parameters)
+    {
+      NamespaceName = namespaceName;
+      ClassName = className;
+      ClassAccessModifier = classAccessModifier;
+      MethodAccessModifier = methodAccessModifier;
+      IsStatic = isStatic;
+      ReturnType = returnType;
+      MethodName = methodName;
+      Parameters = parameters;
+    }
   }
 
   public sealed class SourceFile
   {
     public string FileName { get; }
     public SourceText SourceText { get; }
+
+    public SourceFile(string fileName, SourceText sourceText)
+    {
+      FileName = fileName;
+      SourceText = sourceText;
+    }
   }
 }

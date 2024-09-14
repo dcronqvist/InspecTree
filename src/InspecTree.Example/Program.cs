@@ -15,6 +15,8 @@ public partial class Program
     });
 
     Test(n => n * 3);
+
+    Test2(prefix => $"Hello {prefix}", "world");
   }
 
   public static void Test(InspecTree<Func<int, int>> insp)
@@ -23,6 +25,13 @@ public partial class Program
     walker.Visit(insp.SyntaxTree.GetRoot());
 
     var n = insp.Delegate(2);
+    Console.WriteLine(n);
+    return;
+  }
+
+  private static void Test2(InspecTree<Func<string, string>> insp, string prefix)
+  {
+    var n = insp.Delegate($"Hello {prefix}");
     Console.WriteLine(n);
     return;
   }
