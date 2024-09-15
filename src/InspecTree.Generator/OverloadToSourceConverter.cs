@@ -12,10 +12,11 @@ namespace InspecTree.Generator
       foreach (var overload in overloads)
       {
         var fileName = $"{overload.NamespaceName}_{overload.ClassName}_{overload.MethodName}_Overload.g.cs";
-        var source = $@"
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+        var usingLines = overload.Usings.Select(u => $"using {u};");
+
+        var source =
+        $@"
+{string.Join("\n", usingLines)}
 
 namespace {overload.NamespaceName}
 {{
@@ -24,9 +25,10 @@ namespace {overload.NamespaceName}
     {overload.MethodAccessModifier}{(overload.IsStatic ? " static" : "")} {overload.ReturnType} {overload.MethodName}({ConvertParameters(overload.Parameters)})
     {{
       /* Empty overload that can be intercepted */
+      {(overload.ReturnType == "void" ? "return;" : "return default;")}
     }}
   }}
-}}";
+}}".Trim();
 
         yield return new SourceFile(fileName, SourceText.From(source, Encoding.UTF8));
       }

@@ -17,6 +17,8 @@ namespace InspecTree.Generator
 
   public sealed class GeneratedOverload
   {
+    public List<string> Usings { get; }
+
     public string NamespaceName { get; }
     public string ClassName { get; }
     public string ClassAccessModifier { get; }
@@ -28,8 +30,9 @@ namespace InspecTree.Generator
 
     public List<GeneratedParameter> Parameters { get; }
 
-    public GeneratedOverload(string namespaceName, string className, string classAccessModifier, string methodAccessModifier, bool isStatic, string returnType, string methodName, List<GeneratedParameter> parameters)
+    public GeneratedOverload(List<string> usings, string namespaceName, string className, string classAccessModifier, string methodAccessModifier, bool isStatic, string returnType, string methodName, List<GeneratedParameter> parameters)
     {
+      Usings = usings;
       NamespaceName = namespaceName;
       ClassName = className;
       ClassAccessModifier = classAccessModifier;

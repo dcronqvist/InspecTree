@@ -11,11 +11,11 @@ namespace InspecTree.Generator
   {
     private readonly IOverloadToSourceConverter _overloadToSourceConverter;
 
-    public LambdaToInspecTreeOverloadGenerator() : this(new OverloadToSourceConverter()) { }
+    public LambdaToInspecTreeOverloadGenerator() : this(null) { }
 
-    public LambdaToInspecTreeOverloadGenerator(IOverloadToSourceConverter overloadToSourceConverter)
+    public LambdaToInspecTreeOverloadGenerator(IOverloadToSourceConverter overloadToSourceConverter = null)
     {
-      _overloadToSourceConverter = overloadToSourceConverter;
+      _overloadToSourceConverter = overloadToSourceConverter ?? new OverloadToSourceConverter();
     }
 
     public void Initialize(GeneratorInitializationContext context) =>
@@ -34,6 +34,15 @@ namespace InspecTree.Generator
       {
         var methodSymbol = context.Compilation.GetSemanticModel(method.SyntaxTree).GetDeclaredSymbol(method);
 
+        var usingsInOriginalFile = method.SyntaxTree.GetRoot()
+          .DescendantNodes()
+          .OfType<UsingDirectiveSyntax>()
+          .Select(u => u.Name.ToString())
+          .ToList();
+        var usings = usingsInOriginalFile
+          .Distinct()
+          .Where(u => u != "InspecTree")
+          .ToList();
         var namespaceName = methodSymbol.ContainingNamespace.ToDisplayString();
         var classDeclaration = method.FirstAncestorOrSelf<ClassDeclarationSyntax>();
         var className = classDeclaration.Identifier.Text;
@@ -42,6 +51,7 @@ namespace InspecTree.Generator
         var returnType = method.ReturnType.ToString();
 
         generatedOverloads.Add(new GeneratedOverload(
+          usings: usings,
           namespaceName: namespaceName,
           className: className,
           classAccessModifier: ConvertAccessModifierToString(classDeclaration.Modifiers),
@@ -67,13 +77,20 @@ namespace InspecTree.Generator
 
     private string ConvertAccessModifierToString(SyntaxTokenList modifiers)
     {
-      if (modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword)))
+      bool Has(SyntaxKind kind)
+      {
+        return modifiers.Any(m => m.IsKind(kind));
+      }
+
+      if (Has(SyntaxKind.ProtectedKeyword) && Has(SyntaxKind.InternalKeyword))
+        return "protected internal";
+      if (Has(SyntaxKind.PrivateKeyword) && Has(SyntaxKind.ProtectedKeyword))
+        return "private protected";
+      if (Has(SyntaxKind.PublicKeyword))
         return "public";
-      if (modifiers.Any(m => m.IsKind(SyntaxKind.InternalKeyword)))
-        return "internal";
-      if (modifiers.Any(m => m.IsKind(SyntaxKind.ProtectedKeyword)))
+      if (Has(SyntaxKind.ProtectedKeyword))
         return "protected";
-      if (modifiers.Any(m => m.IsKind(SyntaxKind.PrivateKeyword)))
+      if (Has(SyntaxKind.PrivateKeyword))
         return "private";
 
       return "internal";

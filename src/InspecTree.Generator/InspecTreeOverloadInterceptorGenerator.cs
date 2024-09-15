@@ -115,6 +115,7 @@ var overload_{parameterSyntax.Identifier} = new InspecTree<{withoutInspecTree}>(
           var isStatic = declarationOfCalledMethod.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
           var returnType = declarationOfCalledMethod.ReturnType.ToString();
           var (parameters, body) = ConvertParameters(declarationOfCalledMethod.ParameterList, node.ArgumentList);
+          var callMethod = $"{methodName}({string.Join(", ", declarationOfCalledMethod.ParameterList.Parameters.Select(p => $"overload_{p.Identifier}"))});";
           string generatedClass(string attrib)
           {
             return $@"
@@ -130,7 +131,7 @@ namespace {namespaceName}
     public{(isStatic ? " static" : "")} {returnType} {methodName}__INTERCEPTED_{safeFilePath}__{startLine}__{startColumn}({parameters})
     {{
       {body}
-      {methodName}({string.Join(", ", declarationOfCalledMethod.ParameterList.Parameters.Select(p => $"overload_{p.Identifier}"))});
+      {(returnType == "void" ? callMethod : $"return {callMethod}")}
     }}
   }}
 }}";

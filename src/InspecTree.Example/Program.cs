@@ -1,5 +1,4 @@
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 
 namespace InspecTree.Example;
 
@@ -21,40 +20,37 @@ public partial class Program
 
   public static void Test(InspecTree<Func<int, int>> insp)
   {
-    var walker = new SyntaxWalker();
-    walker.Visit(insp.SyntaxTree.GetRoot());
-
     var n = insp.Delegate(2);
     Console.WriteLine(n);
     return;
   }
 
-  private static void Test2(InspecTree<Func<string, string>> insp, string prefix)
+  private static int Test2(InspecTree<Func<string, string>> insp, string prefix)
   {
     var n = insp.Delegate($"Hello {prefix}");
     Console.WriteLine(n);
-    return;
+    return 5;
   }
 
-  private sealed class SyntaxWalker : CSharpSyntaxWalker
-  {
-    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
-    {
-      if (node.Expression is MemberAccessExpressionSyntax maes
-          && maes.Name.Identifier.Text == "WriteLine"
-          && maes.Expression is IdentifierNameSyntax ins
-          && ins.Identifier.Text == "Console")
-      {
-        Console.WriteLine("Found call to Console.WriteLine!");
-      }
+  // private sealed class SyntaxWalker : CSharpSyntaxWalker
+  // {
+  //   public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+  //   {
+  //     if (node.Expression is MemberAccessExpressionSyntax maes
+  //         && maes.Name.Identifier.Text == "WriteLine"
+  //         && maes.Expression is IdentifierNameSyntax ins
+  //         && ins.Identifier.Text == "Console")
+  //     {
+  //       Console.WriteLine("Found call to Console.WriteLine!");
+  //     }
 
-      base.VisitInvocationExpression(node);
-    }
+  //     base.VisitInvocationExpression(node);
+  //   }
 
-    public override void VisitBinaryExpression(BinaryExpressionSyntax node)
-    {
-      Console.WriteLine($"Found binary expression: (({node.Left}) {node.OperatorToken} ({node.Right}))");
-      base.VisitBinaryExpression(node);
-    }
-  }
+  //   public override void VisitBinaryExpression(BinaryExpressionSyntax node)
+  //   {
+  //     Console.WriteLine($"Found binary expression: (({node.Left}) {node.OperatorToken} ({node.Right}))");
+  //     base.VisitBinaryExpression(node);
+  //   }
+  // }
 }
