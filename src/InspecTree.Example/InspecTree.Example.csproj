@@ -6,7 +6,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);System.Runtime.CompilerServices;InspecTree.Example</InterceptorsPreviewNamespaces>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);InspecTree.Example</InterceptorsPreviewNamespaces>
   </PropertyGroup>
 
   <ItemGroup>

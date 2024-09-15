@@ -11,64 +11,13 @@ namespace InspecTree.Generator
   [Generator]
   public class InspecTreeOverloadInterceptorGenerator : IIncrementalGenerator
   {
-    private sealed class MethodToIntercept
+    private readonly IInterceptedInvocationToSourceConverter _interceptedInvocationToSourceConverter;
+
+    public InspecTreeOverloadInterceptorGenerator() : this(null) { }
+
+    public InspecTreeOverloadInterceptorGenerator(IInterceptedInvocationToSourceConverter interceptedInvocationToSourceConverter = null)
     {
-      public int Line { get; }
-      public int Column { get; }
-      public string FilePath { get; }
-      public InvocationExpressionSyntax Invocation { get; }
-      public string OutputFileName { get; set; }
-      public Func<string, string> GeneratedStuff { get; set; }
-
-      public MethodToIntercept(
-        int line,
-        int column,
-        string filePath,
-        InvocationExpressionSyntax invocation,
-        string outputFileName,
-        Func<string, string> generatedStuff)
-      {
-        Line = line;
-        Column = column;
-        FilePath = filePath;
-        Invocation = invocation;
-        OutputFileName = outputFileName;
-        GeneratedStuff = generatedStuff;
-      }
-    }
-
-    private (string, string) ConvertParameters(ParameterListSyntax parameterListSyntax, ArgumentListSyntax arguments)
-    {
-      var parameters = parameterListSyntax.Parameters.Select((p, i) => ConvertParameter(p, arguments.Arguments[i])).ToList();
-      return (
-        string.Join(", ", parameters.Select(s => s.Item1)),
-        string.Join("\n", parameters.Select(s => s.Item2))
-      );
-    }
-
-    private (string, string) ConvertParameter(ParameterSyntax parameterSyntax, ArgumentSyntax argumentSyntax)
-    {
-      if (parameterSyntax.Type.ToString().StartsWith("InspecTree<", StringComparison.InvariantCulture))
-      {
-        var typeString = parameterSyntax.Type.ToString();
-        var withoutInspecTree = typeString.Substring("InspecTree<".Length, typeString.Length - "InspecTree<".Length - 1);
-
-        var argumentString = argumentSyntax.Expression.ToString()
-          .Replace("\"", "\"\"");
-
-        return (
-          $"{withoutInspecTree} {parameterSyntax.Identifier}",
-$@"
-var overload_{parameterSyntax.Identifier} = new InspecTree<{withoutInspecTree}>({parameterSyntax.Identifier},
-@""
-{argumentString}
-"");");
-      }
-
-      return (
-        $"{parameterSyntax.Type} {parameterSyntax.Identifier}",
-        $"var overload_{parameterSyntax.Identifier} = {parameterSyntax.Identifier};"
-      );
+      _interceptedInvocationToSourceConverter = interceptedInvocationToSourceConverter ?? new InterceptedInvocationToSourceConverter();
     }
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -108,36 +57,41 @@ var overload_{parameterSyntax.Identifier} = new InspecTree<{withoutInspecTree}>(
           var filePath = location.SourceTree?.FilePath;
           var safeFilePath = filePath?.Replace("\\", "_").Replace(":", "_").Replace(".", "_");
 
+          var usingsInOriginalFile = declarationOfCalledMethod.SyntaxTree.GetRoot()
+            .DescendantNodes()
+            .OfType<UsingDirectiveSyntax>()
+            .Select(u => u.Name.ToString())
+            .ToList();
+          var usings = usingsInOriginalFile
+            .Distinct()
+            .Where(u => u != "InspecTree")
+            .ToList();
           var namespaceName = calledMethod.ContainingNamespace.ToDisplayString();
           var className = calledMethod.ContainingType.Name;
 
           var methodName = calledMethod.Name;
           var isStatic = declarationOfCalledMethod.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
           var returnType = declarationOfCalledMethod.ReturnType.ToString();
-          var (parameters, body) = ConvertParameters(declarationOfCalledMethod.ParameterList, node.ArgumentList);
-          var callMethod = $"{methodName}({string.Join(", ", declarationOfCalledMethod.ParameterList.Parameters.Select(p => $"overload_{p.Identifier}"))});";
-          string generatedClass(string attrib)
-          {
-            return $@"
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+          var parameters = declarationOfCalledMethod.ParameterList.Parameters
+            .Select(p => new GeneratedParameter(
+              parameterType: p.Type.ToString(),
+              parameterName: p.Identifier.Text))
+            .ToList();
+          var containingType = declarationOfCalledMethod.FirstAncestorOrSelf<ClassDeclarationSyntax>();
 
-namespace {namespaceName}
-{{
-  public partial class {className}
-  {{
-    {attrib}
-    public{(isStatic ? " static" : "")} {returnType} {methodName}__INTERCEPTED_{safeFilePath}__{startLine}__{startColumn}({parameters})
-    {{
-      {body}
-      {(returnType == "void" ? callMethod : $"return {callMethod}")}
-    }}
-  }}
-}}";
-          }
-
-          return new MethodToIntercept(startLine, startColumn, filePath, node, $"{namespaceName}_{className}_{methodName}_INTERCEPT_{startLine}_{startColumn}.g.cs", generatedClass);
+          return new InterceptedInvocation(
+            usings: usings,
+            namespaceName: namespaceName,
+            className: className,
+            classAccessModifier: containingType.Modifiers.ToFullString().Trim(),
+            line: startLine,
+            column: startColumn,
+            filePath: filePath,
+            methodAccessModifier: declarationOfCalledMethod.Modifiers.ToFullString().Trim(),
+            returnType: returnType,
+            methodName: methodName,
+            parameters: parameters,
+            argumentList: node.ArgumentList);
         });
 
       var compilationWithProviders = context.CompilationProvider
@@ -145,7 +99,7 @@ namespace {namespaceName}
 
       context.RegisterSourceOutput(compilationWithProviders, (ctx, t) =>
       {
-        var invocations = t.Right
+        var invocationsToIntercept = t.Right
           .Where(i => i != null);
 
         var source = $@"
@@ -168,13 +122,10 @@ namespace System.Runtime.CompilerServices
 ";
 
         ctx.AddSource("InterceptionExtensions.g.cs", SourceText.From(source, Encoding.UTF8));
+        var sourceFiles = _interceptedInvocationToSourceConverter.ConvertToSource(invocationsToIntercept.ToList());
 
-        foreach (var invoc in invocations)
-        {
-          var attrib = $"[System.Runtime.CompilerServices.InterceptsLocation(@\"{invoc.FilePath}\", line: {invoc.Line}, character: {invoc.Column})]";
-          var code = invoc.GeneratedStuff(attrib);
-          ctx.AddSource(invoc.OutputFileName, SourceText.From(code, Encoding.UTF8));
-        }
+        foreach (var sourceFile in sourceFiles)
+          ctx.AddSource(sourceFile.FileName, sourceFile.SourceText);
       });
     }
   }
