@@ -16,6 +16,8 @@ public partial class Program
     Test(n => n * 3);
 
     Test2(prefix => $"Hello {prefix}", "world");
+
+    Test3(5);
   }
 
   public static void Test(InspecTree<Func<int, int>> insp)
@@ -30,6 +32,11 @@ public partial class Program
     var n = insp.Delegate($"Hello {prefix}");
     Console.WriteLine(n);
     return 5;
+  }
+
+  private static void Test3(int x)
+  {
+    Console.WriteLine(x);
   }
 
   // private sealed class SyntaxWalker : CSharpSyntaxWalker

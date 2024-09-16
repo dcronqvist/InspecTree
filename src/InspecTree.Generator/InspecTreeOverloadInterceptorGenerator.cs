@@ -20,35 +20,44 @@ namespace InspecTree.Generator
       _interceptedInvocationToSourceConverter = interceptedInvocationToSourceConverter ?? new InterceptedInvocationToSourceConverter();
     }
 
+    private bool MethodHasInspecTreeParameter(MethodDeclarationSyntax methodDeclaration)
+    {
+      return methodDeclaration.ParameterList.Parameters
+        .Any(p => p.Type.ToString().StartsWith("InspecTree<", StringComparison.InvariantCulture));
+    }
+
+    private IncrementalValuesProvider<MethodDeclarationSyntax> GetProviderForMethodDeclarationsToIntercept(IncrementalGeneratorInitializationContext context)
+    {
+      return context.SyntaxProvider.CreateSyntaxProvider(
+        predicate: (node, _) =>
+        {
+          if (!(node is MethodDeclarationSyntax methodDeclaration))
+            return false;
+
+          return MethodHasInspecTreeParameter(methodDeclaration);
+        },
+        transform: (syntaxContext, token) => syntaxContext.Node as MethodDeclarationSyntax);
+    }
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-      var providerMethodDeclaration = context.SyntaxProvider.CreateSyntaxProvider(
-        predicate: (node, _) => node is MethodDeclarationSyntax mds
-                                && mds.ParameterList.Parameters
-                                  .Any(p => p.Type.ToString()
-                                    .StartsWith("InspecTree<", StringComparison.InvariantCulture)),
-        transform: (syntaxContext, token) =>
-        {
-          return syntaxContext.Node as MethodDeclarationSyntax;
-        });
-
-      var methodDeclarationsFromProvider = providerMethodDeclaration.Collect();
-      var methodDeclarations = methodDeclarationsFromProvider.Select((mds, t) => mds);
+      var methodDeclarationsToInterceptFrom = GetProviderForMethodDeclarationsToIntercept(context).Collect();
 
       var invocationProvider = context.SyntaxProvider.CreateSyntaxProvider(
-        predicate: (node, _) => node is InvocationExpressionSyntax ies,
+        predicate: (node, _) => node is InvocationExpressionSyntax,
         transform: (syntaxContext, token) =>
         {
-          var node = syntaxContext.Node as InvocationExpressionSyntax;
-          var invokedMethodSymbolInfo = syntaxContext.SemanticModel.GetSymbolInfo(node.Expression, token);
+          var invocationExpression = syntaxContext.Node as InvocationExpressionSyntax;
+          var invokedMethodSymbolInfo = syntaxContext.SemanticModel.GetSymbolInfo(invocationExpression.Expression, token);
+
           if (!(invokedMethodSymbolInfo.CandidateSymbols.FirstOrDefault() is IMethodSymbol calledMethod))
             return null;
 
           var declarationOfCalledMethod = syntaxContext.SemanticModel.Compilation.SyntaxTrees
             .SelectMany(st => st.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>())
-            .FirstOrDefault(mds => mds.Identifier.Text == calledMethod.Name);
+            .Single(mds => mds.Identifier.Text == calledMethod.Name);
 
-          var location = node.GetLocation();
+          var location = invocationExpression.GetLocation();
           var lineSpan = location.GetLineSpan();
 
           var startLine = lineSpan.StartLinePosition.Line + 1;
@@ -91,7 +100,7 @@ namespace InspecTree.Generator
             returnType: returnType,
             methodName: methodName,
             parameters: parameters,
-            argumentList: node.ArgumentList);
+            argumentList: invocationExpression.ArgumentList);
         });
 
       var compilationWithProviders = context.CompilationProvider
@@ -99,13 +108,7 @@ namespace InspecTree.Generator
 
       context.RegisterSourceOutput(compilationWithProviders, (ctx, t) =>
       {
-        var invocationsToIntercept = t.Right
-          .Where(i => i != null);
-
         var source = $@"
-using System;
-using System.Runtime.CompilerServices;
-
 namespace System.Runtime.CompilerServices
 {{
   [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
@@ -120,8 +123,11 @@ namespace System.Runtime.CompilerServices
   }}
 }}
 ";
-
         ctx.AddSource("InterceptionExtensions.g.cs", SourceText.From(source, Encoding.UTF8));
+
+        var invocationsToIntercept = t.Right
+          .Where(i => i != null);
+
         var sourceFiles = _interceptedInvocationToSourceConverter.ConvertToSource(invocationsToIntercept.ToList());
 
         foreach (var sourceFile in sourceFiles)
