@@ -25,20 +25,26 @@ namespace InspecTree.Generator
     public string ClassAccessModifier { get; }
 
     public string MethodAccessModifier { get; }
-    public bool IsStatic { get; }
     public string ReturnType { get; }
     public string MethodName { get; }
 
     public List<GeneratedParameter> Parameters { get; }
 
-    public GeneratedOverload(List<string> usings, string namespaceName, string className, string classAccessModifier, string methodAccessModifier, bool isStatic, string returnType, string methodName, List<GeneratedParameter> parameters)
+    public GeneratedOverload(
+      List<string> usings,
+      string namespaceName,
+      string className,
+      string classAccessModifier,
+      string methodAccessModifier,
+      string returnType,
+      string methodName,
+      List<GeneratedParameter> parameters)
     {
       Usings = usings;
       NamespaceName = namespaceName;
       ClassName = className;
       ClassAccessModifier = classAccessModifier;
       MethodAccessModifier = methodAccessModifier;
-      IsStatic = isStatic;
       ReturnType = returnType;
       MethodName = methodName;
       Parameters = parameters;

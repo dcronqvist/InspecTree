@@ -150,12 +150,8 @@ public class LambdaToInspecTreeOverloadGeneratorTests
   }
 
   [Theory]
-  [InlineData("public", "public")]
-  // [InlineData("private", "private")] Cannot have top level private classes
-  // [InlineData("protected", "protected")] Cannot have top level protected classes
-  [InlineData("internal", "internal")]
-  // [InlineData("protected internal", "protected internal")] Cannot have top level protected internal classes
-  // [InlineData("private protected", "private protected")] Cannot have top level private protected classes
+  [InlineData("public partial", "public partial")]
+  [InlineData("internal partial", "internal partial")]
   public void OverloadGenerator_ClassAccessModifier_GeneratedOverloadHasExpectedAccessModifier(
     string accessInSource,
     string expectedAccessInGenerated)
@@ -168,7 +164,7 @@ public class LambdaToInspecTreeOverloadGeneratorTests
 
       namespace TestProject;
 
-      {{accessInSource}} partial class Program
+      {{accessInSource}} class Program
       {
         public static void Main(string[] _)
         {
@@ -267,6 +263,7 @@ public class LambdaToInspecTreeOverloadGeneratorTests
   }
 
   [Theory]
+  [InlineData("public static", "public static")]
   [InlineData("public", "public")]
   [InlineData("private", "private")]
   [InlineData("protected", "protected")]
@@ -292,7 +289,7 @@ public class LambdaToInspecTreeOverloadGeneratorTests
 
         }
 
-        {{accessInSource}} static void Test(InspecTree<Func<int, int>> insp)
+        {{accessInSource}} void Test(InspecTree<Func<int, int>> insp)
         {
           return;
         }
@@ -305,43 +302,6 @@ public class LambdaToInspecTreeOverloadGeneratorTests
     var overload = Assert.Single(overloads);
 
     Assert.Equal(expectedAccessInGenerated, overload.MethodAccessModifier);
-  }
-
-  [Theory]
-  [InlineData(true, true)]
-  [InlineData(false, false)]
-  public void OverloadGenerator_IsStatic_IsCorrect(
-    bool isStaticInSource,
-    bool expectedIsStatic)
-  {
-    // Arrange & Act
-    var (c, _, overloads) = TestSetup(
-      $$"""
-      using System;
-      using InspecTree;
-
-      namespace TestProject;
-
-      public partial class Program
-      {
-        public static void Main(string[] _)
-        {
-
-        }
-
-        public{{(isStaticInSource ? " static" : "")}} void Test(InspecTree<Func<int, int>> insp)
-        {
-          return;
-        }
-      }
-      """);
-
-    // Assert
-    Assert.Empty(c.GetDiagnostics());
-
-    var overload = Assert.Single(overloads);
-
-    Assert.Equal(expectedIsStatic, overload.IsStatic);
   }
 
   [Theory]

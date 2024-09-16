@@ -47,16 +47,14 @@ namespace InspecTree.Generator
         var classDeclaration = method.FirstAncestorOrSelf<ClassDeclarationSyntax>();
         var className = classDeclaration.Identifier.Text;
         var methodName = method.Identifier.Text;
-        var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
         var returnType = method.ReturnType.ToString();
 
         generatedOverloads.Add(new GeneratedOverload(
           usings: usings,
           namespaceName: namespaceName,
           className: className,
-          classAccessModifier: ConvertAccessModifierToString(classDeclaration.Modifiers),
-          methodAccessModifier: ConvertAccessModifierToString(method.Modifiers),
-          isStatic: isStatic,
+          classAccessModifier: classDeclaration.Modifiers.ToFullString().Trim(),
+          methodAccessModifier: method.Modifiers.ToFullString().Trim(),
           returnType: returnType,
           methodName: methodName,
           parameters: method.ParameterList.Parameters.Select(p => new GeneratedParameter(
@@ -73,27 +71,6 @@ namespace InspecTree.Generator
 
       foreach (var sourceFile in sourceFiles)
         context.AddSource(sourceFile.FileName, sourceFile.SourceText);
-    }
-
-    private string ConvertAccessModifierToString(SyntaxTokenList modifiers)
-    {
-      bool Has(SyntaxKind kind)
-      {
-        return modifiers.Any(m => m.IsKind(kind));
-      }
-
-      if (Has(SyntaxKind.ProtectedKeyword) && Has(SyntaxKind.InternalKeyword))
-        return "protected internal";
-      if (Has(SyntaxKind.PrivateKeyword) && Has(SyntaxKind.ProtectedKeyword))
-        return "private protected";
-      if (Has(SyntaxKind.PublicKeyword))
-        return "public";
-      if (Has(SyntaxKind.ProtectedKeyword))
-        return "protected";
-      if (Has(SyntaxKind.PrivateKeyword))
-        return "private";
-
-      return "internal";
     }
 
     private sealed class SyntaxReceiver : ISyntaxReceiver

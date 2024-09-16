@@ -20,9 +20,9 @@ namespace InspecTree.Generator
 
 namespace {overload.NamespaceName}
 {{
-  {overload.ClassAccessModifier} partial class {overload.ClassName}
+  {IncludePartialIfNeeded(overload.ClassAccessModifier)} class {overload.ClassName}
   {{
-    {overload.MethodAccessModifier}{(overload.IsStatic ? " static" : "")} {overload.ReturnType} {overload.MethodName}({ConvertParameters(overload.Parameters)})
+    {overload.MethodAccessModifier} {overload.ReturnType} {overload.MethodName}({ConvertParameters(overload.Parameters)})
     {{
       /* Empty overload that can be intercepted */
       {(overload.ReturnType == "void" ? "return;" : "return default;")}
@@ -33,6 +33,9 @@ namespace {overload.NamespaceName}
         yield return new SourceFile(fileName, SourceText.From(source, Encoding.UTF8));
       }
     }
+
+    private string IncludePartialIfNeeded(string classAccessModifier) =>
+      classAccessModifier.EndsWith("partial") ? classAccessModifier : $"{classAccessModifier} partial";
 
     private string ConvertParameters(IEnumerable<GeneratedParameter> parameters) =>
       string.Join(", ", parameters.Select(p => $"{p.ParameterType} {p.ParameterName}"));
