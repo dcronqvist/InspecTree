@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\InspecTree.Generator\InspecTree.Generator.csproj"
+    <ProjectReference Include="..\InspecTree\InspecTree.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\InspecTree\InspecTree.csproj" />

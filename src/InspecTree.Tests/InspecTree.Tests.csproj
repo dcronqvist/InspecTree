@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\InspecTree\InspecTree.csproj" />
-    <ProjectReference Include="..\InspecTree.Generator\InspecTree.Generator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
