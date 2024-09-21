@@ -54,7 +54,7 @@ public partial class Program
   {
     private readonly string _fragmentOutput;
     private readonly StringBuilder _glslCode = new();
-    private Stack<bool> _inMain = new();
+    private readonly Stack<bool> _inMain = new();
     private int _indent = 0;
 
     public CSharpToGLSLTranspiler(string fragmentOutput)

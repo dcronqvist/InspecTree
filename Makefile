@@ -1,3 +1,8 @@
+ifeq ($(OS),Windows_NT)
+	SHELL := pwsh.exe
+	.SHELLFLAGS := -NoProfile -Command
+endif
+
 test: build
 	dotnet test src/InspecTree.sln
 
