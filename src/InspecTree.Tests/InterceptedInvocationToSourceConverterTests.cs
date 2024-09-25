@@ -251,10 +251,17 @@ public class InterceptedInvocationToSourceConverterTests
           [System.Runtime.CompilerServices.InterceptsLocation(@"test.cs", line: 1, character: 1)]
           public void TestMethod__INTERCEPTED_test_cs_1_1(Func<int, int> insp)
           {
-            var overload_insp = new InspecTree<Func<int, int>>(insp,
-            @"
+            var overload_insp_source = @"
             x => x + 1
-            ");
+            ";
+            var overload_insp_syntaxTree = CSharpSyntaxTree.ParseText(overload_insp_source);
+            var overload_insp_compilation = CSharpCompilation.Create("overload_insp")
+              .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+              ;
+            var overload_insp = new InspecTree<Func<int, int>>(
+              insp,
+              overload_insp_syntaxTree,
+              overload_insp_compilation);
             TestMethod(overload_insp);
           }
         }
@@ -321,8 +328,7 @@ public class InterceptedInvocationToSourceConverterTests
           [System.Runtime.CompilerServices.InterceptsLocation(@"test.cs", line: 1, character: 1)]
           public void TestMethod__INTERCEPTED_test_cs_1_1(Func<int, int> insp)
           {
-            var overload_insp = new InspecTree<Func<int, int>>(insp,
-            @"
+            var overload_insp_source = @"
             x =>
             {
               if (x > 0)
@@ -333,7 +339,15 @@ public class InterceptedInvocationToSourceConverterTests
 
               return x;
             }
-            ");
+            ";
+            var overload_insp_syntaxTree = CSharpSyntaxTree.ParseText(overload_insp_source);
+            var overload_insp_compilation = CSharpCompilation.Create("overload_insp")
+              .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+              ;
+            var overload_insp = new InspecTree<Func<int, int>>(
+              insp,
+              overload_insp_syntaxTree,
+              overload_insp_compilation);
             TestMethod(overload_insp);
           }
         }

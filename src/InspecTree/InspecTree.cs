@@ -1,6 +1,5 @@
 using System;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace InspecTree
 {
@@ -8,11 +7,16 @@ namespace InspecTree
   {
     public TDelegate Delegate { get; }
     public SyntaxTree SyntaxTree { get; }
+    public Compilation Compilation { get; }
 
-    public InspecTree(TDelegate @delegate, string source)
+    public InspecTree(
+      TDelegate @delegate,
+      SyntaxTree syntaxTree,
+      Compilation compilation)
     {
       Delegate = @delegate;
-      SyntaxTree = CSharpSyntaxTree.ParseText(source);
+      SyntaxTree = syntaxTree;
+      Compilation = compilation;
     }
   }
 }

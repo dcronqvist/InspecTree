@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -55,6 +56,25 @@ namespace {method.NamespaceName}
       return $"{withoutInspecTree} {parameter.ParameterName}";
     }
 
+    private IEnumerable<string> GetAddReferences(IEnumerable<string> usings)
+    {
+      foreach (var @using in usings)
+      {
+        var assembly = GetAssemblyByName(@using);
+        if (assembly is null)
+          continue;
+
+        var location = assembly.Location;
+        yield return $"MetadataReference.CreateFromFile(\"{location}\")";
+      }
+    }
+
+    private Assembly GetAssemblyByName(string name)
+    {
+      return AppDomain.CurrentDomain.GetAssemblies().
+             SingleOrDefault(assembly => assembly.GetName().Name == name);
+    }
+
     private string GenerateInterceptorConversionOfParameters(InterceptedInvocation method, int indentLevel = 0)
     {
       var bodyBuilder = new StringBuilder();
@@ -76,8 +96,7 @@ namespace {method.NamespaceName}
         var argumentString = argumentSyntaxForParameter.Expression.ToString().Replace("\"", "\"\"");
         var argumentLines = argumentString.Split('\n');
 
-        bodyBuilder.Append($"{new string(' ', indentLevel)}var {mappedParameterName} = new InspecTree<{withoutInspecTree}>({parameter.ParameterName},\n");
-        bodyBuilder.Append($"{new string(' ', indentLevel)}@\"\n");
+        bodyBuilder.Append($"{new string(' ', indentLevel)}var {mappedParameterName}_source = @\"\n");
         foreach (var line in argumentLines)
         {
           if (string.IsNullOrEmpty(line))
@@ -88,7 +107,23 @@ namespace {method.NamespaceName}
 
           bodyBuilder.Append($"{new string(' ', indentLevel)}{line}\n");
         }
-        bodyBuilder.Append($"{new string(' ', indentLevel)}\");\n");
+        bodyBuilder.Append($"{new string(' ', indentLevel)}\";\n");
+
+        bodyBuilder.Append($"{new string(' ', indentLevel)}var {mappedParameterName}_syntaxTree = CSharpSyntaxTree.ParseText({mappedParameterName}_source);\n");
+
+        bodyBuilder.Append($"{new string(' ', indentLevel)}var {mappedParameterName}_compilation = CSharpCompilation.Create(\"{mappedParameterName}\")\n");
+        var addReferences = GetAddReferences(method.Usings);
+        foreach (var reference in addReferences)
+        {
+          bodyBuilder.Append($"{new string(' ', indentLevel + 2)}.AddReferences({reference})\n");
+        }
+        bodyBuilder.Append($"{new string(' ', indentLevel + 2)};\n");
+
+        bodyBuilder.Append($"{new string(' ', indentLevel)}var {mappedParameterName} = new InspecTree<{withoutInspecTree}>(\n");
+
+        bodyBuilder.Append($"{new string(' ', indentLevel + 2)}{parameter.ParameterName},\n");
+        bodyBuilder.Append($"{new string(' ', indentLevel + 2)}{mappedParameterName}_syntaxTree,\n");
+        bodyBuilder.Append($"{new string(' ', indentLevel + 2)}{mappedParameterName}_compilation);");
       }
 
       return bodyBuilder.ToString().Trim();
