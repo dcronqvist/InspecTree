@@ -1,22 +1,26 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace InspecTree
 {
   public class InspecTree<TDelegate> where TDelegate : Delegate
   {
     public TDelegate Delegate { get; }
-    public SyntaxTree SyntaxTree { get; }
-    public Compilation Compilation { get; }
+    public LambdaExpressionSyntax LambdaSyntax { get; }
+    public SemanticModel SemanticModel { get; }
 
     public InspecTree(
       TDelegate @delegate,
-      SyntaxTree syntaxTree,
-      Compilation compilation)
+      LambdaExpressionSyntax lambdaSyntax,
+      SemanticModel semanticModel)
     {
       Delegate = @delegate;
-      SyntaxTree = syntaxTree;
-      Compilation = compilation;
+      LambdaSyntax = lambdaSyntax;
+      SemanticModel = semanticModel;
     }
   }
 }
