@@ -251,10 +251,23 @@ public class InterceptedInvocationToSourceConverterTests
           [System.Runtime.CompilerServices.InterceptsLocation(@"test.cs", line: 1, character: 1)]
           public void TestMethod__INTERCEPTED_test_cs_1_1(Func<int, int> insp)
           {
-            var overload_insp = new InspecTree<Func<int, int>>(insp,
-            @"
-            x => x + 1
-            ");
+            var overload_insp_source = @"
+            using System;
+
+            var overload_insp_lambda = x => x + 1
+            ;";
+            var overload_insp_syntaxTree = CSharpSyntaxTree.ParseText(overload_insp_source);
+            var overload_insp_lambdaDeclaration = overload_insp_syntaxTree.GetRoot().DescendantNodes().OfType<VariableDeclarationSyntax>().Single(x =>
+              x.Variables.Single().Identifier.Text == "overload_insp_lambda");
+            var overload_insp_lambdaExpression = overload_insp_lambdaDeclaration.DescendantNodes().OfType<LambdaExpressionSyntax>().Single();
+            var overload_insp_compilation = CSharpCompilation.Create("overload_insp")
+              .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+              .AddSyntaxTrees(overload_insp_syntaxTree);
+            var overload_insp_semanticModel = overload_insp_compilation.GetSemanticModel(overload_insp_syntaxTree);
+            var overload_insp = new InspecTree<Func<int, int>>(
+              insp,
+              overload_insp_lambdaExpression,
+              overload_insp_semanticModel);
             TestMethod(overload_insp);
           }
         }
@@ -321,9 +334,10 @@ public class InterceptedInvocationToSourceConverterTests
           [System.Runtime.CompilerServices.InterceptsLocation(@"test.cs", line: 1, character: 1)]
           public void TestMethod__INTERCEPTED_test_cs_1_1(Func<int, int> insp)
           {
-            var overload_insp = new InspecTree<Func<int, int>>(insp,
-            @"
-            x =>
+            var overload_insp_source = @"
+            using System;
+
+            var overload_insp_lambda = x =>
             {
               if (x > 0)
                 return x + 1;
@@ -333,7 +347,19 @@ public class InterceptedInvocationToSourceConverterTests
 
               return x;
             }
-            ");
+            ;";
+            var overload_insp_syntaxTree = CSharpSyntaxTree.ParseText(overload_insp_source);
+            var overload_insp_lambdaDeclaration = overload_insp_syntaxTree.GetRoot().DescendantNodes().OfType<VariableDeclarationSyntax>().Single(x =>
+              x.Variables.Single().Identifier.Text == "overload_insp_lambda");
+            var overload_insp_lambdaExpression = overload_insp_lambdaDeclaration.DescendantNodes().OfType<LambdaExpressionSyntax>().Single();
+            var overload_insp_compilation = CSharpCompilation.Create("overload_insp")
+              .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
+              .AddSyntaxTrees(overload_insp_syntaxTree);
+            var overload_insp_semanticModel = overload_insp_compilation.GetSemanticModel(overload_insp_syntaxTree);
+            var overload_insp = new InspecTree<Func<int, int>>(
+              insp,
+              overload_insp_lambdaExpression,
+              overload_insp_semanticModel);
             TestMethod(overload_insp);
           }
         }

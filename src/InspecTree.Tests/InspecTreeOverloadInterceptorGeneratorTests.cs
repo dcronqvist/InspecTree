@@ -519,4 +519,67 @@ public class InspecTreeOverloadInterceptorGeneratorTests
     var argument = Assert.Single(intercept.ArgumentList.Arguments);
     Assert.Equal("x => x", argument.ToFullString());
   }
+
+  [Fact]
+  public void Test1()
+  {
+    // Arrange & Act
+    var (_, _, intercepts) = TestSetup(
+      $$"""
+      using System;
+      using System.Collections.Generic;
+      using System.Linq;
+      using System.Numerics;
+      using System.Text;
+      using Microsoft.CodeAnalysis;
+      using Microsoft.CodeAnalysis.CSharp;
+      using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+      namespace TestProject;
+
+      public partial class Program
+      {
+        public static void Main(string[] _)
+        {
+          string glslCode = TranspileCSharpToGLSLFragmentShader(() =>
+          {
+            float x = 2 + 5;
+            Vector4 color = new Vector4(1.0f);
+
+            if (x > 4)
+            {
+              color = new Vector4(0.2f, 0.3f, x, 1.0f);
+            }
+
+            return color;
+          });
+
+          Console.WriteLine(glslCode);
+
+          // Produces: (with proper whitespace!)
+          /*
+          void main() {
+            float x = (2 + 5);
+            vec4 color = vec4(1);
+
+            if ((x > 4)) {
+              color = vec4(0.2, 0.3, x, 1);
+            }
+
+            FragColor = color;
+            return;
+          }
+          */
+        }
+
+        public static string TranspileCSharpToGLSLFragmentShader(InspecTree<Func<Vector4>> insp)
+        {
+          return "";
+        }
+      }
+      """);
+
+    // Assert
+    Assert.True(true);
+  }
 }

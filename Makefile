@@ -20,4 +20,4 @@ nupkg/InspecTree.0.0.0.nupkg: build
 	dotnet nuget locals all --clear
 
 build:
-	dotnet build src/InspecTree.sln
+	dotnet build src/InspecTree/InspecTree.csproj
