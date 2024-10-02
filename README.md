@@ -15,8 +15,8 @@ public partial class Program
   {
     var glslCode = TranspileToGLSL(() => 
     {
-      float x = 2 + 5;
-      Vector4 color = new Vector4(1.0f);
+      var x = 2 + 5f;
+      var color = new Vector4(1.0f);
 
       if (x > 4)
       {
@@ -38,3 +38,11 @@ public partial class Program
 ```
 
 If you want a more complete example of where this is done, check out the [InspecTree.Example](src/InspecTree.Example/Program.cs) project.
+
+## How it works
+
+InspecTree uses two source generators to make it possible to access both the syntax tree and semantic model of a lambda.
+
+- For each method that accepts an `InspecTree<Func<T>` parameter, it generates an overload that accepts a `Func<T>` parameter instead. This allows you to pass a lambda function to your method since there is no way to implicitly convert a lambda to a user-defined type.
+
+- For each invocation to one of the generated overloads, it generates an interceptor method that will be invoked instead. This interceptor method will create an `InspecTree<Func<T>>` object from the `Func<T>` parameter and store the lambda function's syntax tree and semantic model.
